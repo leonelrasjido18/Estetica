@@ -597,8 +597,8 @@ const DashboardPage = () => {
                             <Menu size={24} />
                         </button>
                         <div>
-                            <h1 style={{ fontSize: '2rem', marginBottom: '5px' }}>Hola, <span style={{ color: 'var(--accent-primary)' }}>Juampi</span></h1>
-                            <p style={{ color: 'var(--text-secondary)' }}>Te esperan {pendingAppointments} cortes para hoy.</p>
+                            <h1 style={{ fontSize: '2rem', marginBottom: '5px' }}>Panel de <span style={{ color: 'var(--accent-primary)' }}>Control</span></h1>
+                            <p style={{ color: 'var(--text-secondary)' }}>Te esperan {pendingAppointments} turnos para hoy.</p>
                         </div>
                     </div>
                     <div style={{ padding: '10px 20px', backgroundColor: 'var(--bg-secondary)', borderRadius: '30px', fontWeight: 'bold' }}>
@@ -610,7 +610,7 @@ const DashboardPage = () => {
                     <div className="animate-fade-in">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
                             <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-                                <Clock color="var(--accent-primary)" /> Próximos Cortes
+                                <Clock color="var(--accent-primary)" /> Próximos Turnos
                             </h2>
                             <button
                                 onClick={() => setIsManualModalOpen(true)}
@@ -853,7 +853,7 @@ const DashboardPage = () => {
                                         <Smartphone size={24} color="white" />
                                     </div>
                                     <div>
-                                        <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Instalar YSY Panel en tu Celular</h3>
+                                        <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Instalar JV Panel en tu Celular</h3>
                                         <p style={{ margin: '5px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                                             Accedé al panel directamente desde tu pantalla de inicio como una aplicación.
                                         </p>

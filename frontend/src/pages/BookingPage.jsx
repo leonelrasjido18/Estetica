@@ -8,7 +8,7 @@ const BookingPage = () => {
     const [step, setStep] = useState(1);
     const [bookingData, setBookingData] = useState({
         serviceId: null,
-        barberId: null,
+        staffId: null,
         date: '',
         time: '',
         clientName: '',

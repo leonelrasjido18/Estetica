@@ -104,7 +104,7 @@ export default function CancelPage() {
     return (
         <div style={styles.page}>
             <div style={styles.card}>
-                <div style={styles.logo}>✂️ YSY BARBER</div>
+                <div style={styles.logo}>✨ JV CENTRO ESTÉTICO</div>
 
                 {loading && <p style={styles.secondary}>Cargando turno...</p>}
 

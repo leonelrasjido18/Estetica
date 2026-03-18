@@ -30,7 +30,7 @@ async function startWhatsApp(forceReconnect = false) {
             printQRInTerminal: true,
             logger: pino({ level: 'silent' }),
             version,
-            browser: ['YSY Panel', 'Chrome', '1.0.0'],
+            browser: ['JV Panel', 'Chrome', '1.0.0'],
             syncFullHistory: false, // Evita colapso al cargar mensajes viejos
             generateHighQualityLinkPreview: true
         });
@@ -232,7 +232,7 @@ const requestReview = async (to, clientName) => {
     // Registrar como pendiente de reseña
     pendingReviews[cleanPhone] = { name: clientName, timestamp: Date.now() };
     
-    const message = `⭐ *¡Hola ${clientName}!*\n\n¿Cómo fue tu experiencia en *YSY BARBER*?\n\nCalificanos respondiendo con un número:\n\n1️⃣ Malo\n2️⃣ Regular\n3️⃣ Bueno\n4️⃣ Muy bueno\n5️⃣ Excelente\n\n_También podés agregar un comentario después del número._\n_Ej: 5 Me encantó el corte!_`;
+    const message = `⭐ *¡Hola ${clientName}!*\n\n¿Cómo fue tu experiencia en *JV Centro Estético*?\n\nCalificanos respondiendo con un número:\n\n1️⃣ Malo\n2️⃣ Regular\n3️⃣ Bueno\n4️⃣ Muy bueno\n5️⃣ Excelente\n\n_También podés agregar un comentario después del número._\n_Ej: 5 Me encantó el tratamiento!_`;
     
     return sendWhatsAppMessage(to, message);
 };

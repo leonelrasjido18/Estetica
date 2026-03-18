@@ -249,10 +249,10 @@ function initDatabase() {
         db.get("SELECT COUNT(*) AS count FROM services", (err, row) => {
             if (row && row.count === 0) {
                 const stmt = db.prepare("INSERT INTO services (name, duration, price) VALUES (?, ?, ?)");
-                stmt.run('Corte Clásico', 30, 8000);
-                stmt.run('Degradado (Fade)', 45, 10000);
-                stmt.run('Corte + Barba', 60, 15000);
-                stmt.run('Perfilado Rapido', 20, 5000);
+                stmt.run('Limpieza Facial', 45, 8000);
+                stmt.run('Tratamiento Anti-age', 60, 12000);
+                stmt.run('Depilación Definitiva', 30, 10000);
+                stmt.run('Masaje Relajante', 50, 9000);
                 stmt.finalize();
                 console.log('✅ Servicios iniciales cargados.');
             }
@@ -265,7 +265,7 @@ function initDatabase() {
             db.get("SELECT id FROM users WHERE role = 'master'", (err, row) => {
                 if (!row) {
                     const stmt = db.prepare("INSERT INTO users (name, phone, password, role) VALUES (?, ?, ?, 'master')");
-                    stmt.run('Juampi', '+549111234567', hashedPassword);
+                    stmt.run('Admin', '+549111234567', hashedPassword);
                     stmt.finalize();
                     console.log('✅ Usuario maestro guardado por primera vez.');
                 } else {
@@ -672,13 +672,13 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
                                 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://synory.tech';
                                 const cancelLink = row.cancellation_token ? `${FRONTEND_URL}/cancelar/${row.cancellation_token}` : null;
                                 const cancelMsg = cancelLink ? `\n\n¿Necesitás cancelar o reprogramar?\n${cancelLink}` : '';
-                                const msgCliente = `*YSY BARBER* ✂️\n¡Hola ${row.clientName}!\n\nTu seña fue recibida y tu turno fue *CONFIRMADO*.\n*Fecha:* ${row.appointmentDate}\n*Hora:* ${row.appointmentTime}\n*Servicio:* ${row.serviceName}${cancelMsg}\n\n¡Te esperamos!`;
+                                const msgCliente = `*JV Centro Estético* ✨\n¡Hola ${row.clientName}!\n\nTu seña fue recibida y tu turno fue *CONFIRMADO*.\n*Fecha:* ${row.appointmentDate}\n*Hora:* ${row.appointmentTime}\n*Servicio:* ${row.serviceName}${cancelMsg}\n\n¡Te esperamos!`;
                                 sendWhatsAppMessage(cleanPhone, msgCliente);
 
                                 db.get("SELECT phone FROM users WHERE role = 'master'", [], (err, masterRow) => {
                                     if (masterRow) {
                                         const masterPhone = masterRow.phone.replace(/\D/g, '');
-                                        sendWhatsAppMessage(masterPhone, `📣 *Juampi - Seña Recibida*\n${row.clientName} pagó la seña y confirmó para el ${row.appointmentDate} a las ${row.appointmentTime}.\n(${row.serviceName})`);
+                                        sendWhatsAppMessage(masterPhone, `📣 *Nueva Seña Recibida*\n${row.clientName} pagó la seña y confirmó para el ${row.appointmentDate} a las ${row.appointmentTime}.\n(${row.serviceName})`);
                                     }
                                 });
                             }
@@ -1203,7 +1203,7 @@ cron.schedule('* * * * *', () => {
 
             if (diffMins === 15 && app.notification15MinSent === 0) {
                 const cleanPhone = app.clientPhone.replace(/\D/g, '');
-                const msg = `*YSY BARBER* ✂️\n\n¡${app.clientName}, tu turno de ${app.serviceName} empieza en *15 minutos*! Te esperamos.`;
+                const msg = `*JV Centro Estético* ✨\n\n¡${app.clientName}, tu turno de ${app.serviceName} empieza en *15 minutos*! Te esperamos.`;
                 sendWhatsAppMessage(cleanPhone, msg);
                 db.run("UPDATE appointments SET notification15MinSent = 1 WHERE id = ?", [app.id]);
             }
@@ -1212,7 +1212,7 @@ cron.schedule('* * * * *', () => {
                 db.get("SELECT phone FROM users WHERE role = 'master'", [], (err, masterRow) => {
                     if (!err && masterRow) {
                         const cleanMasterPhone = masterRow.phone.replace(/\D/g, '');
-                        const msgMaster = `⚠️ *JUAMPI - CORTE EN 5 MIN*\n\n*Cliente:* ${app.clientName}\n*Servicio:* ${app.serviceName}\n*Hora:* ${app.appointmentTime}`;
+                        const msgMaster = `⚠️ *TURNO EN 5 MIN*\n\n*Cliente:* ${app.clientName}\n*Servicio:* ${app.serviceName}\n*Hora:* ${app.appointmentTime}`;
                         sendWhatsAppMessage(cleanMasterPhone, msgMaster);
                         db.run("UPDATE appointments SET notificationMasterSent = 1 WHERE id = ?", [app.id]);
                     }
@@ -1241,7 +1241,7 @@ cron.schedule('0 * * * *', () => {
             appointments.forEach(app => {
                 if (app.clientPhone) {
                     const cleanPhone = app.clientPhone.replace(/\D/g, '');
-                    const msg = `*YSY BARBER* ✂️\n\n¡Hola ${app.clientName}!\n\nTe recordamos que mañana tenés turno:\n*📅 Fecha:* ${app.appointmentDate}\n*⏰ Hora:* ${app.appointmentTime}\n*💈 Servicio:* ${app.serviceName}\n\n¡Te esperamos!`;
+                    const msg = `*JV Centro Estético* ✨\n\n¡Hola ${app.clientName}!\n\nTe recordamos que mañana tenés turno:\n*📅 Fecha:* ${app.appointmentDate}\n*⏰ Hora:* ${app.appointmentTime}\n*💆 Servicio:* ${app.serviceName}\n\n¡Te esperamos!`;
                     sendWhatsAppMessage(cleanPhone, msg);
                     db.run("UPDATE appointments SET notification24hSent = 1 WHERE id = ?", [app.id]);
                 }
@@ -1257,7 +1257,7 @@ cron.schedule('0 * * * *', () => {
             clients.forEach(c => {
                 if (c.birthday && c.birthday.slice(5) === todayMD && c.phone) {
                     const cleanPhone = c.phone.replace(/\D/g, '');
-                    const msg = `*YSY BARBER* ✂️🎂\n\n¡Feliz cumpleaños ${c.name}!\n\nQue la pases genial. Como regalo, te invitamos a tu próximo corte con un *descuento especial*.\n\n¡Pasá a visitarnos! 🎉`;
+                    const msg = `*JV Centro Estético* ✨🎂\n\n¡Feliz cumpleaños ${c.name}!\n\nQue la pases genial. Como regalo, te invitamos a tu próximo turno con un *descuento especial*.\n\n¡Pasá a visitarnos! 🎉`;
                     sendWhatsAppMessage(cleanPhone, msg);
                 }
             });
@@ -1373,7 +1373,7 @@ app.post('/api/appointments/reschedule/:token', (req, res) => {
 
                         if (isReady()) {
                             const cleanPhone = row.clientPhone.replace(/\D/g, '');
-                            sendWhatsAppMessage(cleanPhone, `*YSY BARBER* ✂️\n¡Hola ${row.clientName}!\n\nTu turno fue *REPROGRAMADO* exitosamente.\n*Nueva Fecha:* ${newDate}\n*Nueva Hora:* ${newTime}\n*Servicio:* ${row.serviceName}\n\n¡Te esperamos!`);
+                            sendWhatsAppMessage(cleanPhone, `*JV Centro Estético* ✨\n¡Hola ${row.clientName}!\n\nTu turno fue *REPROGRAMADO* exitosamente.\n*Nueva Fecha:* ${newDate}\n*Nueva Hora:* ${newTime}\n*Servicio:* ${row.serviceName}\n\n¡Te esperamos!`);
 
                             db.get("SELECT phone FROM users WHERE role = 'master'", [], (e, masterRow) => {
                                 if (masterRow) {
