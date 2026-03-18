@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:UsersleoneOneDriveEscritorioesteticafrontend -type f \\\\\\(-name *.tsx -o -name *.jsx -o -name *.ts -o -name *.js -o -name *.css -o -name *.scss -o -name *.html \\\\\\) ! -path */node_modules/* ! -path */.venv/* ! -path */dist/* ! -path */build/*)",
+      "Bash(find c:UsersleoneOneDriveEscritorioesteticafrontend -not -path */node_modules/* -type d)"
+    ]
+  }
+}

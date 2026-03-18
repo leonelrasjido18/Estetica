@@ -1,0 +1,308 @@
+import { useState, useEffect } from 'react';
+import { Clock, Scissors, ChevronRight, CheckCircle, ArrowLeft, Tag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getServices, createAppointment, getSchedules, getBookedTimes, validatePromoCode } from '../api';
+
+const BookingPage = () => {
+    const navigate = useNavigate();
+    const [step, setStep] = useState(1);
+    const [bookingData, setBookingData] = useState({
+        serviceId: null,
+        barberId: null,
+        date: '',
+        time: '',
+        clientName: '',
+        clientPhone: ''
+    });
+
+    const [services, setServices] = useState([]);
+    const [availableTimes, setAvailableTimes] = useState([]);
+    const [bookedTimes, setBookedTimes] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Promo code state
+    const [promoCode, setPromoCode] = useState('');
+    const [promoResult, setPromoResult] = useState(null);
+    const [promoLoading, setPromoLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const servicesData = await getServices();
+                setServices(servicesData);
+                try {
+                    const schedulesData = await getSchedules();
+                    setAvailableTimes(schedulesData.map(s => s.time));
+                } catch (schedErr) {
+                    console.error('Error cargando horarios:', schedErr);
+                    setAvailableTimes(['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00']);
+                }
+            } catch (err) {
+                console.error('Error general cargando datos:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    useEffect(() => {
+        if (bookingData.date) {
+            getBookedTimes(bookingData.date)
+                .then(times => setBookedTimes(times))
+                .catch(err => console.error(err));
+        } else {
+            setBookedTimes([]);
+        }
+    }, [bookingData.date]);
+
+    const updateData = (key, value) => {
+        setBookingData(prev => {
+            const next = { ...prev, [key]: value };
+            if (key === 'date') next.time = '';
+            return next;
+        });
+    };
+
+    const nextStep = () => setStep(step + 1);
+    const prevStep = () => setStep(step > 1 ? step - 1 : 1);
+
+    const handleApplyPromo = async () => {
+        if (!promoCode.trim()) return;
+        setPromoLoading(true);
+        const res = await validatePromoCode(promoCode.trim());
+        setPromoResult(res);
+        setPromoLoading(false);
+    };
+
+    const selectedService = services.find(s => s.id === bookingData.serviceId);
+    const originalPrice = selectedService ? selectedService.price : 0;
+    const discountPercent = promoResult?.valid ? promoResult.discountPercent : 0;
+    const finalPrice = originalPrice - (originalPrice * discountPercent / 100);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await createAppointment({
+                clientName: bookingData.clientName,
+                clientPhone: '+549' + bookingData.clientPhone,
+                serviceId: bookingData.serviceId,
+                appointmentDate: bookingData.date,
+                appointmentTime: bookingData.time
+            });
+            if (result.init_point) {
+                window.location.href = result.init_point;
+            } else {
+                setStep(4);
+            }
+        } catch (error) {
+            console.error('Error booking:', error);
+            alert("Hubo un error al generar la seña. Intenta de nuevo.");
+        }
+    };
+
+    return (
+        <div style={{ padding: '2vh 20px', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: '800px', marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }} className="animate-fade-in">
+                <button
+                    onClick={() => step === 1 ? navigate('/') : prevStep()}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', width: 'fit-content', padding: '5px 0', fontSize: '0.9rem' }}
+                >
+                    <ArrowLeft size={16} /> Volver
+                </button>
+                <h1 style={{ fontSize: '2rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    RESERVA TU CITA
+                </h1>
+                {step < 4 && (
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        {[1, 2, 3].map(i => (
+                            <div key={i} style={{
+                                flex: 1, height: '4px', borderRadius: '4px',
+                                backgroundColor: step >= i ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                                transition: 'var(--transition)'
+                            }} />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div style={{ width: '100%', maxWidth: '800px', marginTop: '20px' }}>
+
+                {/* Step 1: Services */}
+                {step === 1 && (
+                    <div className="animate-fade-in">
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: '700', textTransform: 'uppercase', marginBottom: '15px', color: 'var(--text-primary)' }}>
+                            PASO 1: ELIGE TU SERVICIO
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px' }}>
+                            {services.map(s => (
+                                <div
+                                    key={s.id}
+                                    onClick={() => updateData('serviceId', s.id)}
+                                    style={{
+                                        padding: '16px', borderRadius: '16px',
+                                        border: `2px solid ${bookingData.serviceId === s.id ? 'var(--accent-primary)' : 'var(--bg-tertiary)'}`,
+                                        backgroundColor: bookingData.serviceId === s.id ? 'rgba(201, 169, 110, 0.05)' : 'var(--bg-secondary)',
+                                        cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '10px',
+                                        transition: 'var(--transition)',
+                                        boxShadow: bookingData.serviceId === s.id ? 'var(--shadow-glow)' : 'var(--shadow-subtle)'
+                                    }}
+                                >
+                                    <div>
+                                        <h3 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '4px' }}>{s.name}</h3>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{s.duration} min de sesion</p>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '5px' }}>
+                                        <div style={{ fontWeight: '800', fontSize: '1.2rem', color: 'var(--accent-primary)' }}>${s.price}</div>
+                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: '500' }}>{s.duration} min</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ marginTop: '20px' }}>
+                            <button className="btn-primary" disabled={!bookingData.serviceId}
+                                style={{ opacity: !bookingData.serviceId ? 0.3 : 1, width: 'fit-content', padding: '12px 24px' }} onClick={nextStep}>
+                                SIGUIENTE <ChevronRight size={18} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 2: Date & Time */}
+                {step === 2 && (
+                    <div className="animate-fade-in">
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: '700', textTransform: 'uppercase', marginBottom: '15px' }}>PASO 2: FECHA Y RELOJ</h2>
+                        <div className="card" style={{ marginBottom: '20px', padding: '20px' }}>
+                            <label className="input-label" style={{ marginBottom: '10px' }}>Día Reservado</label>
+                            <input type="date" className="input-field" value={bookingData.date}
+                                onClick={(e) => { try { e.target.showPicker(); } catch (err) { } }}
+                                onChange={(e) => updateData('date', e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                style={{ colorScheme: 'dark', padding: '15px', fontSize: '1rem', cursor: 'pointer' }} />
+                        </div>
+                        {bookingData.date && (
+                            <div className="animate-fade-in card" style={{ padding: '20px' }}>
+                                <label className="input-label" style={{ marginBottom: '15px' }}>Horarios de Atención</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
+                                    {availableTimes.sort().map(t => {
+                                        const isBooked = bookedTimes.includes(t);
+                                        return (
+                                            <div key={t} onClick={() => { if (!isBooked) updateData('time', t) }}
+                                                style={{
+                                                    padding: '12px', textAlign: 'center', borderRadius: '12px', cursor: isBooked ? 'not-allowed' : 'pointer',
+                                                    border: `2px solid ${bookingData.time === t ? 'var(--accent-primary)' : 'var(--bg-tertiary)'}`,
+                                                    backgroundColor: bookingData.time === t ? 'var(--accent-primary)' : 'transparent',
+                                                    color: bookingData.time === t ? 'var(--text-inverse)' : isBooked ? 'var(--text-secondary)' : 'var(--text-primary)',
+                                                    fontWeight: '700', fontSize: '1rem', transition: 'var(--transition)',
+                                                    opacity: isBooked ? 0.3 : 1, textDecoration: isBooked ? 'line-through' : 'none'
+                                                }}>{t}</div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        <div style={{ marginTop: '20px' }}>
+                            <button className="btn-primary" disabled={!bookingData.date || !bookingData.time}
+                                style={{ opacity: (!bookingData.date || !bookingData.time) ? 0.3 : 1, padding: '12px 24px' }} onClick={nextStep}>
+                                SIGUIENTE <ChevronRight size={18} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 3: User Info + Promo Code */}
+                {step === 3 && (
+                    <div className="animate-fade-in">
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: '700', textTransform: 'uppercase', marginBottom: '15px' }}>PASO 3: CONFIRMACIÓN</h2>
+                        <form onSubmit={handleSubmit} className="card" style={{ padding: '20px 30px' }}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label className="input-label">Nombre y Apellido</label>
+                                <input type="text" className="input-field" placeholder="Ej: Martín Gómez"
+                                    value={bookingData.clientName} onChange={(e) => updateData('clientName', e.target.value)}
+                                    style={{ padding: '15px', fontSize: '1rem' }} required />
+                            </div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label className="input-label">Número de WhatsApp</label>
+                                <div style={{ display: 'flex', alignItems: 'stretch', width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+                                    <div style={{ padding: '0 16px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRight: 'none', color: 'var(--text-primary)', fontSize: '1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '1.2rem' }}>🇦🇷</span>
+                                        <span style={{ color: 'var(--text-secondary)' }}>+54 9</span>
+                                    </div>
+                                    <input type="tel" className="input-field" placeholder="11 1234 5678"
+                                        value={bookingData.clientPhone} onChange={(e) => updateData('clientPhone', e.target.value.replace(/\D/g, ''))}
+                                        style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, flex: 1 }} required />
+                                </div>
+                                <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '10px', fontSize: '0.85rem' }}>
+                                    Recibirás alertas automatizadas en este número.
+                                </small>
+                            </div>
+
+                            {/* Código de Descuento */}
+                            <div style={{ marginBottom: '25px', padding: '20px', backgroundColor: 'rgba(201,169,110,0.03)', borderRadius: '12px', border: '1px solid rgba(201,169,110,0.1)' }}>
+                                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                    <Tag size={16} color="var(--accent-primary)" /> Código de Descuento (opcional)
+                                </label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <input type="text" className="input-field" placeholder="Ej: VERANO10"
+                                        value={promoCode} onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoResult(null); }}
+                                        style={{ flex: 1, textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }} />
+                                    <button type="button" onClick={handleApplyPromo} disabled={promoLoading || !promoCode.trim()}
+                                        style={{ padding: '10px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem',
+                                            backgroundColor: 'var(--accent-primary)', color: 'white', border: 'none', cursor: 'pointer',
+                                            opacity: (promoLoading || !promoCode.trim()) ? 0.4 : 1 }}>
+                                        {promoLoading ? '...' : 'APLICAR'}
+                                    </button>
+                                </div>
+                                {promoResult && (
+                                    <div style={{ marginTop: '10px', padding: '10px 15px', borderRadius: '8px',
+                                        backgroundColor: promoResult.valid ? 'rgba(0,204,102,0.1)' : 'rgba(239,68,68,0.1)',
+                                        color: promoResult.valid ? 'var(--success)' : 'var(--error)',
+                                        fontWeight: '600', fontSize: '0.9rem' }}>
+                                        {promoResult.valid
+                                            ? `✅ ¡${promoResult.discountPercent}% de descuento aplicado! ${promoResult.description || ''}`
+                                            : `❌ ${promoResult.error || 'Código inválido'}`}
+                                    </div>
+                                )}
+                                {promoResult?.valid && selectedService && (
+                                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '15px', fontSize: '0.95rem' }}>
+                                        <span style={{ color: 'var(--text-secondary)', textDecoration: 'line-through' }}>${originalPrice}</span>
+                                        <span style={{ color: 'var(--success)', fontWeight: '800', fontSize: '1.3rem' }}>${finalPrice.toFixed(0)}</span>
+                                        <span style={{ padding: '4px 10px', backgroundColor: 'rgba(0,204,102,0.1)', borderRadius: '20px', color: 'var(--success)', fontWeight: '700', fontSize: '0.8rem' }}>
+                                            -{discountPercent}%
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button type="submit" className="btn-primary" style={{ width: '100%', padding: '15px', fontSize: '1.1rem' }}>
+                                PAGAR SEÑA (25%) <CheckCircle size={20} />
+                            </button>
+                        </form>
+                    </div>
+                )}
+
+                {/* Step 4: Success */}
+                {step === 4 && (
+                    <div className="animate-fade-in" style={{ textAlign: 'center', padding: '60px 0' }}>
+                        <div style={{
+                            width: '100px', height: '100px', borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px',
+                            border: '2px solid var(--success)'
+                        }}>
+                            <CheckCircle size={50} color="var(--success)" />
+                        </div>
+                        <h2 style={{ marginBottom: '15px', fontSize: '2.5rem', fontWeight: '800' }}>¡LISTO!</h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '50px', fontSize: '1.2rem', maxWidth: '500px', margin: '0 auto 50px' }}>
+                            Gracias, <span style={{ color: 'var(--text-primary)' }}>{bookingData.clientName}</span>. Tu turno ha sido agendado exitosamente. Recibirás tu confirmación y aviso directo por WhatsApp en el transcurso del día.
+                        </p>
+                        <button className="btn-primary" onClick={() => navigate('/')}>
+                            VOLVER AL INICIO
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default BookingPage;
